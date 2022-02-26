@@ -1,2 +1,5 @@
 .env
 bin
+queue-it-api-key
+__debug*
+.vscode
