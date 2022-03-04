@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +14,8 @@ import (
 
 const (
 	GAUGE = "gauge"
+	// Number of metrics sent in getWaitingRoomQueueStatisticsSummary. Needed to calculate total number of metrics
+	SUMMARY_METRIC_COUNT = 13
 )
 
 // newQueueitAPI creates a queueitAPI
@@ -26,191 +27,92 @@ func newQueueitAPI(logger *zap.Logger, baseURL string, apiKey string, omitTestWa
 		omitTestWaitingRooms: omitTestWaitingRooms,
 	}
 
-	// metrics from the statistics summary endpoint
-	q.summaryNameToMetric = map[string]queueitMetric{
-		"TotalQueueCount": {
-			queueitMetricName:  "TotalQueueCount",
-			exportedMetricName: "queue_it_total_queue_count",
-			description:        "Total queue count",
-			metricType:         GAUGE,
-		},
-		"TotalQueueCountBeforeStart": {
-			queueitMetricName:  "TotalQueueCountBeforeStart",
-			exportedMetricName: "queue_it_total_queue_count_before_start",
-			description:        "Total queue count before start",
-			metricType:         GAUGE,
-		},
-		"TotalWaitingInQueueCount": {
-			queueitMetricName:  "TotalWaitingInQueueCount",
-			exportedMetricName: "queue_it_total_waiting_in_queue_count",
-			description:        "Total waiting in queue count",
-			metricType:         GAUGE,
-		},
-		"TotalLeftQueueCount": {
-			queueitMetricName:  "TotalLeftQueueCount",
-			exportedMetricName: "queue_it_total_left_queue_count",
-			description:        "Total left queue count",
-			metricType:         GAUGE,
-		},
-		"NoOfRedirectsLastMinute": {
-			queueitMetricName:  "NoOfRedirectsLastMinute",
-			exportedMetricName: "queue_it_no_of_redirects_last_minute",
-			description:        "Number of redirects in the last minute",
-			metricType:         GAUGE,
-		},
-		"NoOfUniqueRedirectsLastMinute": {
-			queueitMetricName:  "NoOfUniqueRedirectsLastMinute",
-			exportedMetricName: "queue_it_no_of_unique_redirects_last_minute",
-			description:        "Number of unique redirects in the last minute",
-			metricType:         GAUGE,
-		},
-		"SafetyNetRedirectedCount": {
-			queueitMetricName:  "SafetyNetRedirectedCount",
-			exportedMetricName: "queue_it_safety_net_redirected_count",
-			description:        "Safety net redirected count",
-			metricType:         GAUGE,
-		},
-		"RedirectorRedirectedCount": {
-			queueitMetricName:  "RedirectorRedirectedCount",
-			exportedMetricName: "queue_it_redirector_redirected_count",
-			description:        "Redirector redrected count",
-			metricType:         GAUGE,
-		},
-		"TotalRedirectedCount": {
-			queueitMetricName:  "TotalRedirectedCount",
-			exportedMetricName: "queue_it_total_redirected_count",
-			description:        "Total redirected count",
-			metricType:         GAUGE,
-		},
-		"TotalEmailCount": {
-			queueitMetricName:  "TotalEmailCount",
-			exportedMetricName: "queue_it_total_email_count",
-			description:        "Total email count",
-			metricType:         GAUGE,
-		},
-		"TotalEmailNotificationCount": {
-			queueitMetricName:  "TotalEmailNotificationCount",
-			exportedMetricName: "queue_it_total_email_notification_count",
-			description:        "Total email notification count",
-			metricType:         GAUGE,
-		},
-		"TotalOldQueueNumbers": {
-			queueitMetricName:  "TotalOldQueueNumbers",
-			exportedMetricName: "queue_it_total_old_queue_numbers",
-			description:        "Total old queue numbers",
-			metricType:         GAUGE,
-		},
-		"TotalExceededMaxRedirectCount": {
-			queueitMetricName:  "TotalExceededMaxRedirectCount",
-			exportedMetricName: "queue_it_total_exceeded_max_redirect_count",
-			description:        "Total exceeded max redirect count",
-			metricType:         GAUGE,
-		},
-	}
-
 	// metrics from the statistics detail endpoint
 	q.detailNameToMetric = map[string]queueitMetric{
 		"queuebeforeeventinflow": {
 			queueitMetricName:  "queuebeforeeventinflow",
 			exportedMetricName: "queue_it_queue_before_event_inflow_count",
 			description:        "The amount of users who have joined the pre-queue",
-			metricType:         GAUGE,
 		},
 		"queueinflow": {
 			queueitMetricName:  "queueinflow",
 			exportedMetricName: "queue_it_queue_inflow_count",
 			description:        "Users who have joined either the pre-queue or the queue",
-			metricType:         GAUGE,
 		},
 		"queueuniqueoutflow": {
 			queueitMetricName:  "queueuniqueoutflow",
 			exportedMetricName: "queue_it_queue_unique_outflow_count",
 			description:        "The number of initial queue redirects per minute (first redirect of the queue ID)",
-			metricType:         GAUGE,
 		},
 		"queueoutflow": {
 			queueitMetricName:  "queueoutflow",
 			exportedMetricName: "queue_it_queue_outflow_count",
 			description:        "The amount of queue numbers which have been redirected from the queue",
-			metricType:         GAUGE,
 		},
 		"safetynetoutflow": {
 			queueitMetricName:  "safetynetoutflow",
 			exportedMetricName: "queue_it_safety_net_outflow_count",
 			description:        "Redirected queue numbers which were redirected without having waited in the queue (requires Always Visible, so this value is irrelevant in your case)",
-			metricType:         GAUGE,
 		},
 		"queueidsinqueue": {
 			queueitMetricName:  "queueidsinqueue",
 			exportedMetricName: "queue_it_queue_ids_in_queue_count",
 			description:        "The amount of Queue IDs currently waiting in line",
-			metricType:         GAUGE,
 		},
 		"queueuniqueinflow": {
 			queueitMetricName:  "queueuniqueinflow",
 			exportedMetricName: "queue_it_queue_unique_inflow_count",
 			description:        "The amount of new (unique) Queue IDs entering the queue per minute",
-			metricType:         GAUGE,
 		},
 		"queueidscanceled": {
 			queueitMetricName:  "queueidscanceled",
 			exportedMetricName: "queue_it_queue_ids_canceled_count",
 			description:        "The amount of Queue IDs which have been canceled by Cancel Action or API",
-			metricType:         GAUGE,
 		},
 		"notificationfirst": {
 			queueitMetricName:  "notificationfirst",
 			exportedMetricName: "queue_it_notification_first_count",
 			description:        "The amount of users who received the first email notification upon signing up",
-			metricType:         GAUGE,
 		},
 		"notificationyourturn": {
 			queueitMetricName:  "notificationyourturn",
 			exportedMetricName: "queue_it_notification_your_turn_count",
 			description:        "The amount of users who received the It's Your Turn email notification",
-			metricType:         GAUGE,
 		},
 		"exceededmaxredirectcount": {
 			queueitMetricName:  "exceededmaxredirectcount",
 			exportedMetricName: "queue_it_exceeded_max_redirect_count",
 			description:        "The amount of visitors who pass through the waiting room more times than they are allowed (as configured in the Waiting Room Settings)",
-			metricType:         GAUGE,
 		},
 		"maxoutflow": {
 			queueitMetricName:  "maxoutflow",
 			exportedMetricName: "queue_it_max_out_flow",
 			description:        "The highest amount of Queue IDs which are allowed to be redirected to your site per minute",
-			metricType:         GAUGE,
 		},
 		"queueexpectedwaittime": {
 			queueitMetricName:  "queueexpectedwaittime",
 			exportedMetricName: "queue_it_queue_expected_wait_time",
 			description:        "For users arriving at a given time, this is the predicted wait time",
-			metricType:         GAUGE,
 		},
 		"queueactualwaittime": {
 			queueitMetricName:  "queueactualwaittime",
 			exportedMetricName: "queue_it_queue_actual_wait_time",
 			description:        "The actual amount of minutes wait time in the queue",
-			metricType:         GAUGE,
 		},
 		"returningqueueitemsinlessthan30s": {
 			queueitMetricName:  "returningqueueitemsinlessthan30s",
 			exportedMetricName: "queue_it_returning_queue_items_in_less_than_30s",
 			description:        "If a Queue ID is returning to the queue less than 30 seconds after it was redirected to the target site, we count it as a fast re-entering user",
-			metricType:         GAUGE,
 		},
 		"oldqueuenumbers": {
 			queueitMetricName:  "oldqueuenumbers",
 			exportedMetricName: "queue_it_old_queue_numbers_count",
 			description:        "The amount of Queue IDs who have been first in line and did not choose to be redirected to the target site",
-			metricType:         GAUGE,
 		},
 		"redirectedpercentage": {
 			queueitMetricName:  "redirectedpercentage",
 			exportedMetricName: "queue_it_redirected_percentage",
 			description:        "Percent of users who took their turn within a minute",
-			metricType:         GAUGE,
 		},
 	}
 
@@ -311,60 +213,49 @@ func (q *queueitAPI) getOpenWaitingRooms() ([]WaitingRoom, error) {
 	return rooms, nil
 }
 
-// parseStatisticsSummaryMetrics creates queueitMetric objects for all metrics present
-// in the response body of the waiting room statistics summary api, parsing the string value into float64
-func (q *queueitAPI) parseStatisticsSummaryMetrics(waitingRoomID string, body []byte, metricsDictionary map[string]queueitMetric) ([]*queueitMetric, error) {
-	var metrics map[string]string
-	if err := json.Unmarshal(body, &metrics); err != nil {
-		q.logger.Debug("queueitAPI.parseStatisticsSummaryMetrics(): failed to unmarshal stats", zap.Error(err))
-		return nil, err
-	}
-
-	parsedMetrics := make([]*queueitMetric, 0)
-	for name := range metricsDictionary {
-		value, err := strconv.ParseFloat(metrics[name], 64)
-		if err != nil {
-			return nil, err
-		}
-
-		parsedMetrics = append(parsedMetrics, &queueitMetric{
-			exportedMetricName: metricsDictionary[name].exportedMetricName,
-			queueitMetricName:  metricsDictionary[name].queueitMetricName,
-			waitingRoomID:      waitingRoomID,
-			value:              value,
-			metricType:         metricsDictionary[name].metricType,
-		})
-	}
-
-	return parsedMetrics, nil
+// sendSummaryMetrics sends StatisticsSummary metrics to a channel
+func (q *queueitAPI) sendSummaryMetrics(m *StatisticsSummary, waitingRoomID string, c chan *queueitMetric) {
+	// SUMMARY_METRIC_COUNT must be set to the number of metrics sent from here
+	c <- &queueitMetric{exportedMetricName: "queue_it_total_queue_count", value: m.TotalQueueCount, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_total_queue_count_before_start", value: m.TotalQueueCountBeforeStart, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_total_waiting_in_queue_count", value: m.TotalWaitingInQueueCount, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_total_left_queue_count", value: m.TotalLeftQueueCount, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_no_of_redirects_last_minute", value: m.NoOfRedirectsLastMinute, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_no_of_unique_redirects_last_minute", value: m.NoOfUniqueRedirectsLastMinute, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_safety_net_redirected_count", value: m.SafetyNetRedirectedCount, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_redirector_redirected_count", value: m.RedirectorRedirectedCount, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_total_redirected_count", value: m.TotalRedirectedCount, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_total_email_count", value: m.TotalEmailCount, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_total_email_notification_count", value: m.TotalEmailNotificationCount, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_total_old_queue_numbers", value: m.TotalOldQueueNumbers, waitingRoomID: waitingRoomID}
+	c <- &queueitMetric{exportedMetricName: "queue_it_total_exceeded_max_redirect_count", value: m.TotalExceededMaxRedirectCount, waitingRoomID: waitingRoomID}
 }
 
 // getWaitingRoomQueueStatisticsSummary sends metrics from the queue statistics summary api
 // to the provided channel
 // If the API call fails the challen will be fed a nil value
-func (q *queueitAPI) getWaitingRoomQueueStatisticsSummary(id string, statsChan chan *queueitMetric) {
+func (q *queueitAPI) getWaitingRoomQueueStatisticsSummary(id string, c chan *queueitMetric) {
 	body, err := q.doRequest("GET", fmt.Sprintf("/2_0/event/%s/queue/statistics/summary", id), nil)
 	if err != nil {
 		// throw returned error away but log it
 		q.handleAPIError(body, err)
-		statsChan <- nil
+		c <- nil
 	}
 
 	// turn JSON map into list of metrics
-	metrics, err := q.parseStatisticsSummaryMetrics(id, body, q.summaryNameToMetric)
+	var metrics StatisticsSummary
+	err = json.Unmarshal(body, &metrics)
 	if err != nil {
 		q.logger.Info(
 			"queueitAPI.getWaitingRoomQueueStatisticsSummary(): failed to unmarshal stats",
 			zap.String("body", string(body)),
 			zap.Error(err),
 		)
-		statsChan <- nil
+		c <- nil
 	}
 
 	// send metrics to channel
-	for _, metric := range metrics {
-		statsChan <- metric
-	}
+	q.sendSummaryMetrics(&metrics, id, c)
 }
 
 // getWaitingRoomQueueStatisticsDetail sends a metric from the queue statistics details api
@@ -401,17 +292,14 @@ func (q *queueitAPI) getWaitingRoomQueueStatisticsDetail(id string, statisticTyp
 	statsChan <- &queueitMetric{
 		exportedMetricName: q.detailNameToMetric[statisticType].exportedMetricName,
 		queueitMetricName:  q.detailNameToMetric[statisticType].queueitMetricName,
-		metricType:         q.detailNameToMetric[statisticType].metricType,
 		waitingRoomID:      id,
 		value:              value,
 	}
 }
 
 // getMetrics queries the api for metrics from all active waiting rooms
-func (q *queueitAPI) getMetrics() (*queueitMetricsByType, error) {
-	metrics := &queueitMetricsByType{
-		gauges: make([]*queueitMetric, 0),
-	}
+func (q *queueitAPI) getMetrics() ([]*queueitMetric, error) {
+	metrics := make([]*queueitMetric, 0)
 
 	// Get active rooms we want to collect metrics for
 	rooms, err := q.getOpenWaitingRooms()
@@ -427,9 +315,9 @@ func (q *queueitAPI) getMetrics() (*queueitMetricsByType, error) {
 	q.logger.Debug("queueitAPI.getMetrics(): found rooms", zap.Int("count", len(rooms)))
 
 	// Number of metrics expected to come in through the channel
-	// Every waiting room has len(queueitStatSummaryNameToMetric) summary metrics and
+	// Every waiting room has SUMMARY_METRIC_COUNT summary metrics and
 	// len(queueitStatDetailsNameToMetric) detail metrics
-	totalMetricCount := len(rooms) * (len(q.summaryNameToMetric) + len(q.detailNameToMetric))
+	totalMetricCount := len(rooms) * (SUMMARY_METRIC_COUNT + len(q.detailNameToMetric))
 	q.logger.Debug("queueitAPI.getMetrics(): calculated expected number of metrics", zap.Int("count", totalMetricCount))
 
 	statsChan := make(chan *queueitMetric, totalMetricCount)
@@ -458,7 +346,7 @@ func (q *queueitAPI) getMetrics() (*queueitMetricsByType, error) {
 			return nil, fmt.Errorf("queueitAPI.getMetrics(): failed to get statistics for waiting room")
 		}
 
-		metrics.gauges = append(metrics.gauges, stat)
+		metrics = append(metrics, stat)
 
 		q.logger.Debug("queueitAPI.getMetrics(): done getting metrics",
 			zap.String("waiting_room_id", stat.waitingRoomID),

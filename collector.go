@@ -28,12 +28,10 @@ type collector struct {
 // newCollector returns a queueitAPI connector
 func newCollector(logger *zap.Logger, api *queueitAPI) *collector {
 	logger.Debug("newCollector()")
-	c := &collector{
+	return &collector{
 		logger:     logger,
 		queueitAPI: api,
 	}
-
-	return c
 }
 
 // Describe implements Collector
@@ -70,8 +68,8 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	// Contacted Queue-it api successfully
 	ch <- prometheus.MustNewConstMetric(up, prometheus.GaugeValue, 1)
 
-	// Send gauges
-	for _, m := range metrics.gauges {
+	// Send metrics
+	for _, m := range metrics {
 		ch <- prometheus.MustNewConstMetric(
 			prometheus.NewDesc(
 				m.exportedMetricName,

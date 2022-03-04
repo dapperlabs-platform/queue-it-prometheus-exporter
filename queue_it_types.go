@@ -15,7 +15,6 @@ type queueitMetric struct {
 	exportedMetricName string
 	description        string
 	waitingRoomID      string
-	metricType         string
 	value              float64
 }
 
@@ -24,14 +23,8 @@ type queueitAPI struct {
 	logger               *zap.Logger
 	apiKey               string
 	baseUrl              string
-	summaryNameToMetric  map[string]queueitMetric
 	detailNameToMetric   map[string]queueitMetric
 	omitTestWaitingRooms bool
-}
-
-// queueitMetricsByType groups metrics by their types
-type queueitMetricsByType struct {
-	gauges []*queueitMetric
 }
 
 // Custom unmarshallers
@@ -43,11 +36,7 @@ type stringToTime struct {
 func (t *stringToBool) UnmarshalJSON(data []byte) error {
 	str := strings.ToLower(strings.Replace(string(data), "\"", "", 2))
 
-	if str == "true" {
-		*t = true
-	} else {
-		*t = false
-	}
+	*t = str == "true"
 
 	return nil
 }
@@ -63,6 +52,24 @@ func (t *stringToTime) UnmarshalJSON(data []byte) error {
 	t.Time = ts
 
 	return nil
+}
+
+type StatisticsSummary struct {
+	VersionTimestamp                        stringToTime `json:"VersionTimestamp"`
+	TotalQueueCount                         float64      `json:",string"`
+	TotalQueueCountBeforeStart              float64      `json:",string"`
+	TotalWaitingInQueueCount                float64      `json:",string"`
+	TotalLeftQueueCount                     float64      `json:",string"`
+	NoOfRedirectsLastMinute                 float64      `json:",string"`
+	NoOfUniqueRedirectsLastMinute           float64      `json:",string"`
+	SafetyNetRedirectedCount                float64      `json:",string"`
+	RedirectorRedirectedCount               float64      `json:",string"`
+	TotalRedirectedCount                    float64      `json:",string"`
+	TotalEmailCount                         float64      `json:",string"`
+	TotalEmailNotificationCount             float64      `json:",string"`
+	TotalOldQueueNumbers                    float64      `json:",string"`
+	TotalExceededMaxRedirectCount           float64      `json:",string"`
+	ReturningQueueItemsInLessThan30SLastMin float64      `json:",string"`
 }
 
 // WaitingRoom represents a waiting room data structure as returned by

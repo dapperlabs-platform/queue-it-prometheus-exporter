@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"flag"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +12,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
+
+type paths struct {
+	Metrics template.URL
+	Healthz template.URL
+}
 
 func main() {
 	var listenAddress string
@@ -64,18 +71,33 @@ func main() {
 	// Register collector
 	prometheus.MustRegister(c)
 
+	tmpl, err := template.New("index").
+		Parse(`<html>
+					<head><title>Kube Metrics Server</title></head>
+					<body>
+					<h1>Kube Metrics</h1>
+				<ul>
+					<li><a href='{{.Metrics}}'>metrics</a></li>
+					<li><a href='{{.Healthz}}'>healthz</a></li>
+				</ul>
+					</body>
+					</html>`)
+	if err != nil {
+		log.Fatal("failed to parse index template")
+	}
+
+	out := &bytes.Buffer{}
+	err = tmpl.Execute(out, &paths{
+		Metrics: template.URL(metricsPath),
+		Healthz: template.URL(healthzPath),
+	})
+	if err != nil {
+		log.Fatal("failed to execute index template")
+	}
+
 	// Add root path
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
-	           <head><title>Kube Metrics Server</title></head>
-	           <body>
-	           <h1>Kube Metrics</h1>
-			 <ul>
-	           <li><a href='` + metricsPath + `'>metrics</a></li>
-	           <li><a href='` + healthzPath + `'>healthz</a></li>
-			 </ul>
-	           </body>
-	           </html>`))
+		w.Write(out.Bytes())
 	})
 
 	// Add healthzPath

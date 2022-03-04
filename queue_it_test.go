@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -24,89 +23,54 @@ func TestHandlerAddHeaders(t *testing.T) {
 }
 
 func TestHandlerDropTestWaitingRooms(t *testing.T) {
+	type want struct {
+		len     int
+		eventID string
+	}
+	type test struct {
+		input []WaitingRoom
+		want  want
+	}
 	q := &queueitAPI{}
-	input := []WaitingRoom{
-		{
-			EventID: "1",
-			IsTest:  true,
-		},
-		{
-			EventID: "2",
-			IsTest:  false,
-		},
+	tests := []test{
+		{input: []WaitingRoom{{EventID: "1", IsTest: true}, {EventID: "2", IsTest: false}}, want: want{len: 1, eventID: "2"}},
 	}
 
-	got := q.dropTestWaitingRooms(input)
-	fmt.Println(got)
+	for _, tc := range tests {
+		got := q.dropTestWaitingRooms(tc.input)
 
-	if len(got) != 1 || got[0].EventID != "2" {
-		t.Fail()
+		if tc.want.len != len(got) || tc.want.eventID != got[0].EventID {
+			t.Fail()
+		}
 	}
 }
 
-func TestParseStatisticsSummaryMetrics(t *testing.T) {
-	q := &queueitAPI{}
-	dict := map[string]queueitMetric{
-		"metric-1": {
-			queueitMetricName:  "metric-1",
-			exportedMetricName: "queue_it_metric_1",
-		},
-		"metric-2": {
-			queueitMetricName:  "metric-2",
-			exportedMetricName: "queue_it_metric_2",
-		},
+// If this test times out then sendSummaryMetrics is sending
+// fewer than SUMMARY_METRIC_COUNT metrics to the channel
+func TestSendSummaryMetrics(t *testing.T) {
+	logger, _ := zap.NewDevelopment()
+	q := &queueitAPI{
+		logger: logger,
 	}
 
-	valid := map[string]string{
-		"metric-1": "1.5",
-		"metric-2": "2",
+	input := &StatisticsSummary{}
+
+	c := make(chan *queueitMetric, SUMMARY_METRIC_COUNT*2)
+	defer func() {
+		logger.Sync()
+		close(c)
+	}()
+
+	go func() {
+		q.sendSummaryMetrics(input, "id", c)
+	}()
+
+	for n := 0; n < SUMMARY_METRIC_COUNT; n++ {
+		<-c
 	}
 
-	s, _ := json.Marshal(valid)
-	got, err := q.parseStatisticsSummaryMetrics("1", s, dict)
-
-	if err != nil {
-		t.Fail()
-	}
-
-	if len(got) != 2 {
-		t.Fail()
-	}
-
-	for n := 0; n < len(got); n++ {
-		if got[n].exportedMetricName == "metric_1" && got[n].value != 1.5 {
-			t.Fail()
-		}
-		if got[n].exportedMetricName == "metric_2" && got[n].value != 2 {
-			t.Fail()
-		}
-	}
-
-	// invalid number value should fail
-	invalid := map[string]string{
-		"metric-1": "1.5",
-		"metric-2": "abc",
-	}
-
-	s, _ = json.Marshal(invalid)
-	_, err = q.parseStatisticsSummaryMetrics("1", s, dict)
-
-	if err == nil {
-		t.Fail()
-	}
-
-	// metric is missing from response should fail
-	s, _ = json.Marshal(invalid)
-	dict = map[string]queueitMetric{
-		"metric-3": {
-			queueitMetricName:  "metric-3",
-			exportedMetricName: "queue_it_metric_3",
-		},
-	}
-	_, err = q.parseStatisticsSummaryMetrics("1", s, dict)
-
-	if err == nil {
-		t.Fail()
+	if len(c) > 0 {
+		t.Error("sendSummaryMetrics sent more than SUMMARY_METRIC_COUNT to channel")
 	}
 }
 
