@@ -171,6 +171,7 @@ func (q *queueitAPI) getWaitingRoomQueueStatisticsSummary(id string, c chan *que
 	q.sendSummaryMetrics(&metrics, id, c)
 }
 
+// getStatisticsDetailsMetrics sends statistics details metrics to channel
 func (q *queueitAPI) getStatisticsDetailsMetrics(id string, c chan *queueitMetric) {
 	statisticsDetailsMetrics := []*queueitMetric{
 		{queueitMetricName: "queuebeforeeventinflow", exportedMetricName: "queue_it_queue_before_event_inflow_count", description: "The amount of users who have joined the pre-queue"},
