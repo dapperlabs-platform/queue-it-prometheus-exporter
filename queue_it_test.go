@@ -109,14 +109,14 @@ func SkipTestGetWaitingRoomQueueStatisticsDetail(t *testing.T) {
 	}
 
 	m := &queueitMetric{
-		queueitMetricName:  "queueinflow",
-		exportedMetricName: "queue_it_queue_inflow",
+		queueitMetricName:  "queueoutflow",
+		exportedMetricName: "queue_it_queue_outflow_count",
 	}
 
-	c := make(chan *queueitMetric, 1)
+	c := make(chan *queueitMetric, 2)
 	now := time.Now()
 	then := now.Add(-1 * time.Minute)
-	q.getWaitingRoomQueueStatisticsDetail("0224allstarstdgqr3", m, then, now, c)
+	q.getWaitingRoomQueueStatisticsDetail("foo", m, true, then, now, c)
 	go func() {
 		time.Sleep(5 * time.Second)
 		close(c)
