@@ -295,7 +295,7 @@ func (q *queueitAPI) getMetrics() ([]*queueitMetric, error) {
 	}
 
 	// fan in metrics
-	for n := 0; n < TOTAL_METRIC_COUNT; n++ {
+	for n := 0; n < len(rooms)*TOTAL_METRIC_COUNT; n++ {
 		stat := <-statsChan
 
 		if stat == nil {
