@@ -71,6 +71,7 @@ Queue-it metrics don't follow [Prometheus naming conventions](https://prometheus
 | queueinflow                      | queue_it_queue_inflow_count                     |
 | queueuniqueoutflow               | queue_it_queue_unique_outflow_count             |
 | queueoutflow                     | queue_it_queue_outflow_count                    |
+| queueoutflow (Accumulated)       | queue_it_queue_outflow_accumulated              |
 | safetynetoutflow                 | queue_it_safety_net_outflow_count               |
 | queueidsinqueue                  | queue_it_queue_ids_in_queue_count               |
 | queueuniqueinflow                | queue_it_queue_unique_inflow_count              |

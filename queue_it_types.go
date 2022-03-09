@@ -106,5 +106,5 @@ type StatisticsDetail struct {
 	To               string
 	Interval         int `json:",string"`
 	Entries          []StatisticsDetailEntry
-	SumOffset        int `json:",string"`
+	SumOffset        float64 `json:",string"`
 }

@@ -18,7 +18,9 @@ const (
 	SUMMARY_METRIC_COUNT = 14
 	// Number of metrics iterated over in getStatisticsDetailsMetrics
 	DETAILS_METRIC_COUNT = 17
-	TOTAL_METRIC_COUNT   = SUMMARY_METRIC_COUNT + DETAILS_METRIC_COUNT
+	// Number of metrics in getStatisticsDetailsMetrics' accumulatedMetrics
+	ACCUMULATED_DETAILS_METRIC_COUNT = 1
+	TOTAL_METRIC_COUNT               = SUMMARY_METRIC_COUNT + DETAILS_METRIC_COUNT + ACCUMULATED_DETAILS_METRIC_COUNT
 )
 
 // newQueueitAPI creates a queueitAPI
@@ -193,18 +195,23 @@ func (q *queueitAPI) getStatisticsDetailsMetrics(id string, c chan *queueitMetri
 		{queueitMetricName: "redirectedpercentage", exportedMetricName: "queue_it_redirected_percentage", description: "Percent of users who took their turn within a minute"},
 	}
 
+	// Export another metric for accumulated total at request time (SumOffset field)
+	accumulatedMetrics := map[string]bool{
+		"queueoutflow": true,
+	}
+
 	now := time.Now()
 	then := now.Add(-1 * time.Minute)
 
 	for _, m := range statisticsDetailsMetrics {
-		go q.getWaitingRoomQueueStatisticsDetail(id, m, then, now, c)
+		go q.getWaitingRoomQueueStatisticsDetail(id, m, accumulatedMetrics[m.queueitMetricName], then, now, c)
 	}
 }
 
 // getWaitingRoomQueueStatisticsDetail sends a metric from the queue statistics details api
 // to the provided channel
 // If the API call fails the challen will be fed a nil value
-func (q *queueitAPI) getWaitingRoomQueueStatisticsDetail(id string, m *queueitMetric, from time.Time, to time.Time, statsChan chan *queueitMetric) {
+func (q *queueitAPI) getWaitingRoomQueueStatisticsDetail(id string, m *queueitMetric, sendAccumulatedMetric bool, from time.Time, to time.Time, statsChan chan *queueitMetric) {
 	fromQueryParam := url.QueryEscape(from.Format(time.RFC3339))
 	toQueryParam := url.QueryEscape(to.Format(time.RFC3339))
 
@@ -237,6 +244,20 @@ func (q *queueitAPI) getWaitingRoomQueueStatisticsDetail(id string, m *queueitMe
 		queueitMetricName:  m.queueitMetricName,
 		waitingRoomID:      id,
 		value:              value,
+	}
+
+	if sendAccumulatedMetric {
+		// remove _count form original already exporter metric
+		// append _accumulated instead of _total to respect prometheus semantics as these values
+		// aren't really prometheus Counter equivalent
+		exportedName := strings.Replace(m.exportedMetricName, "_count", "", 1) + "_accumulated"
+
+		statsChan <- &queueitMetric{
+			exportedMetricName: exportedName,
+			queueitMetricName:  m.queueitMetricName,
+			waitingRoomID:      id,
+			value:              metric.SumOffset,
+		}
 	}
 }
 
