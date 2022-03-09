@@ -23,7 +23,6 @@ type queueitAPI struct {
 	logger               *zap.Logger
 	apiKey               string
 	baseUrl              string
-	detailNameToMetric   map[string]queueitMetric
 	omitTestWaitingRooms bool
 }
 

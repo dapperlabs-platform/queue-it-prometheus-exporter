@@ -52,35 +52,35 @@ Queue-it metrics don't follow [Prometheus naming conventions](https://prometheus
 
 > All metrics are exporter with a `waiting_room_id` label
 
-| Queue-it name                                       | exported name                                   |
-| --------------------------------------------------- | ----------------------------------------------- |
-| TotalQueueCount                                     | queue_it_total_queue_count                      |
-| TotalQueueCountBeforeStart                          | queue_it_total_queue_count_before_start         |
-| TotalWaitingInQueueCount                            | queue_it_total_waiting_in_queue_count           |
-| TotalLeftQueueCount                                 | queue_it_total_left_queue_count                 |
-| NoOfRedirectsLastMinute                             | queue_it_no_of_redirects_last_minute            |
-| NoOfUniqueRedirectsLastMinute                       | queue_it_no_of_unique_redirects_last_minute     |
-| SafetyNetRedirectedCount                            | queue_it_safety_net_redirected_count            |
-| RedirectorRedirectedCount                           | queue_it_redirector_redirected_count            |
-| TotalRedirectedCount                                | queue_it_total_redirected_count                 |
-| TotalEmailCount                                     | queue_it_total_email_count                      |
-| TotalEmailNotificationCount                         | queue_it_total_email_notification_count         |
-| TotalOldQueueNumbers                                | queue_it_total_old_queue_numbers                |
-| TotalExceededMaxRedirectCount                       | queue_it_total_exceeded_max_redirect_count      |
-| queuebeforeeventinflow                              | queue_it_queue_before_event_inflow_count        |
-| queueinflow                                         | queue_it_queue_inflow_count                     |
-| queueuniqueoutflow                                  | queue_it_queue_unique_outflow_count             |
-| queueoutflow                                        | queue_it_queue_outflow_count                    |
-| safetynetoutflow                                    | queue_it_safety_net_outflow_count               |
-| queueidsinqueue                                     | queue_it_queue_ids_in_queue_count               |
-| queueuniqueinflow                                   | queue_it_queue_unique_inflow_count              |
-| queueidscanceled                                    | queue_it_queue_ids_canceled_count               |
-| notificationfirst                                   | queue_it_notification_first_count               |
-| notificationyourturn                                | queue_it_notification_your_turn_count           |
-| exceededmaxredirectcount                            | queue_it_exceeded_max_redirect_count            |
-| maxoutflow                                          | queue_it_max_out_flow                           |
-| queueexpectedwaittime                               | queue_it_queue_expected_wait_time               |
-| queueactualwaittime                                 | queue_it_queue_actual_wait_time                 |
-| returningqueueitemsinlessthan30s                    | queue_it_returning_queue_items_in_less_than_30s |
-| oldqueuenumbers                                     | queue_it_old_queue_numbers_count                |
-| redirectedpercentage queue_it_redirected_percentage |
+| Queue-it name                    | exported name                                   |
+| -------------------------------- | ----------------------------------------------- |
+| TotalQueueCount                  | queue_it_total_queue_count                      |
+| TotalQueueCountBeforeStart       | queue_it_total_queue_count_before_start         |
+| TotalWaitingInQueueCount         | queue_it_total_waiting_in_queue_count           |
+| TotalLeftQueueCount              | queue_it_total_left_queue_count                 |
+| NoOfRedirectsLastMinute          | queue_it_no_of_redirects_last_minute            |
+| NoOfUniqueRedirectsLastMinute    | queue_it_no_of_unique_redirects_last_minute     |
+| SafetyNetRedirectedCount         | queue_it_safety_net_redirected_count            |
+| RedirectorRedirectedCount        | queue_it_redirector_redirected_count            |
+| TotalRedirectedCount             | queue_it_total_redirected_count                 |
+| TotalEmailCount                  | queue_it_total_email_count                      |
+| TotalEmailNotificationCount      | queue_it_total_email_notification_count         |
+| TotalOldQueueNumbers             | queue_it_total_old_queue_numbers                |
+| TotalExceededMaxRedirectCount    | queue_it_total_exceeded_max_redirect_count      |
+| queuebeforeeventinflow           | queue_it_queue_before_event_inflow_count        |
+| queueinflow                      | queue_it_queue_inflow_count                     |
+| queueuniqueoutflow               | queue_it_queue_unique_outflow_count             |
+| queueoutflow                     | queue_it_queue_outflow_count                    |
+| safetynetoutflow                 | queue_it_safety_net_outflow_count               |
+| queueidsinqueue                  | queue_it_queue_ids_in_queue_count               |
+| queueuniqueinflow                | queue_it_queue_unique_inflow_count              |
+| queueidscanceled                 | queue_it_queue_ids_canceled_count               |
+| notificationfirst                | queue_it_notification_first_count               |
+| notificationyourturn             | queue_it_notification_your_turn_count           |
+| exceededmaxredirectcount         | queue_it_exceeded_max_redirect_count            |
+| maxoutflow                       | queue_it_max_out_flow                           |
+| queueexpectedwaittime            | queue_it_queue_expected_wait_time               |
+| queueactualwaittime              | queue_it_queue_actual_wait_time                 |
+| returningqueueitemsinlessthan30s | queue_it_returning_queue_items_in_less_than_30s |
+| oldqueuenumbers                  | queue_it_old_queue_numbers_count                |
+| redirectedpercentage             | queue_it_redirected_percentage                  |
