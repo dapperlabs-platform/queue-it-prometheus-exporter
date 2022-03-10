@@ -19,7 +19,7 @@ const (
 	// Number of metrics iterated over in getStatisticsDetailsMetrics
 	DETAILS_METRIC_COUNT = 17
 	// Number of metrics in getStatisticsDetailsMetrics' accumulatedMetrics
-	ACCUMULATED_DETAILS_METRIC_COUNT = 1
+	ACCUMULATED_DETAILS_METRIC_COUNT = 0
 	TOTAL_METRIC_COUNT               = SUMMARY_METRIC_COUNT + DETAILS_METRIC_COUNT + ACCUMULATED_DETAILS_METRIC_COUNT
 )
 
@@ -196,9 +196,7 @@ func (q *queueitAPI) getStatisticsDetailsMetrics(id string, c chan *queueitMetri
 	}
 
 	// Export another metric for accumulated total at request time (SumOffset field)
-	accumulatedMetrics := map[string]bool{
-		"queueoutflow": true,
-	}
+	accumulatedMetrics := map[string]bool{}
 
 	now := time.Now()
 	then := now.Add(-1 * time.Minute)
@@ -295,7 +293,7 @@ func (q *queueitAPI) getMetrics() ([]*queueitMetric, error) {
 	}
 
 	// fan in metrics
-	for n := 0; n < TOTAL_METRIC_COUNT; n++ {
+	for n := 0; n < len(rooms)*TOTAL_METRIC_COUNT; n++ {
 		stat := <-statsChan
 
 		if stat == nil {
